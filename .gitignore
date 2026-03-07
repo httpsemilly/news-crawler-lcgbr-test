@@ -1,0 +1,35 @@
+# python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+.venv/
+ENV/
+
+# environment & secrets
+.env
+*.key
+*.pem
+*.json
+config/local.yaml
+
+# scrapy
+logs/
+output/
+feeds/
+items.json
+items.csv
+
+# ide
+.vscode/
+
+# os
+.DS_Store
+Thumbs.db
+
+# system crash dumps
+*.stackdump
+*.dump
