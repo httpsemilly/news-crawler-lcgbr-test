@@ -2,6 +2,8 @@ import scrapy
 import re
 from ..items import TheGuardianItem
 from datetime import datetime
+from readability import Document
+from bs4 import BeautifulSoup
 
 class TheGuardianSpider(scrapy.Spider):
     """
@@ -38,18 +40,18 @@ class TheGuardianSpider(scrapy.Spider):
 
         articles = response.css("a::attr(href)").getall()
         pattern = r"/\d{4}/[a-z]{3}/\d{2}/"
-        excluded_sections = ['/audio/', '/live/', '/gallery/', 'info']
+        excluded_sections = ['/audio/', '/live/', '/gallery/', '/info/']
 
         for url in articles:
             if not any(section in url for section in excluded_sections):
-                if re.search(pattern, url) != None:
+                if re.search(pattern, url) is not None:
                     yield response.follow(url, callback=self.parse_article)
 
     def parse_article(self, response):
         """
         Extracts structured data from each individual article page.
 
-        Creates a instance of the class TheGuardianItem and fills each field using CSS selectors.
+        Creates a instance of the class TheGuardianItem and fills each field using CSS selectors and Readability.
 
         Args:
             response: Scrapy response object from the individual article page.
@@ -59,11 +61,12 @@ class TheGuardianSpider(scrapy.Spider):
         """
 
         item = TheGuardianItem()
+        doc = Document(response.text)
 
         item['headline'] = response.css('h1::text').get()
         item['article_url'] = response.url
         item['author'] = response.css('address[data-component="meta-byline"] a[rel="author"]::text').getall()
-        item['article_text'] = " ".join(response.css('div#maincontent p::text').getall())
+        item['article_text'] = BeautifulSoup(doc.summary(), 'lxml').get_text()
         item['published_date'] = response.css('details[data-gu-name="dateline"] summary span::text').get()
         item['category'] = response.url.split('/')[3]
         item['standfirst'] = response.css('div[data-gu-name="standfirst"] div p::text').get()
