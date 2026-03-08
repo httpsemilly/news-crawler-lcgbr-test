@@ -1,0 +1,3 @@
+bigquery:
+  dataset: theguardian_news
+  table: articles
