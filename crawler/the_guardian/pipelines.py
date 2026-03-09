@@ -15,7 +15,8 @@ class TheGuardianPipeline:
     """
 
     def open_spider(self):
-        """Initializes the BigQuery client and table reference when the spider opens."""
+        """Initializes the BigQuery client, creates the dataset and table if they don't exist,
+        and sets up the table reference when the spider opens."""
 
         config_path = os.path.join(os.path.dirname(__file__), '..', '..', 'config', 'config.yaml')
         with open(config_path, 'r') as file:
@@ -25,6 +26,23 @@ class TheGuardianPipeline:
         self.table = config['bigquery']['table']
 
         self.client = bigquery.Client()
+
+        self.dataset_obj = bigquery.Dataset(f"{self.client.project}.{self.dataset}")
+        self.client.create_dataset(self.dataset_obj, exists_ok=True)
+
+        schema = [
+            bigquery.SchemaField("headline", "STRING"),
+            bigquery.SchemaField("article_url", "STRING", mode="REQUIRED"),
+            bigquery.SchemaField("author", "STRING", mode="REPEATED"),
+            bigquery.SchemaField("article_text", "STRING"),
+            bigquery.SchemaField("published_date", "STRING"),
+            bigquery.SchemaField("category", "STRING"),
+            bigquery.SchemaField("standfirst", "STRING"),
+            bigquery.SchemaField("scraped_at", "TIMESTAMP"),
+        ]
+
+        table_obj = bigquery.Table(f"{self.client.project}.{self.dataset}.{self.table}", schema=schema)
+        self.client.create_table(table_obj, exists_ok=True)
 
         self.dataset_ref = self.client.dataset(self.dataset)
         self.table_ref = self.dataset_ref.table(self.table)
