@@ -37,16 +37,21 @@ class TheGuardianPipeline:
             item: A TheGuardianItem instance containing the article data.
 
         Returns:
-            item: The item after successful insertion.
+            item: The scraped item, regardless of whether it was inserted or skipped.
 
         Raises:
             Exception: If BigQuery returns errors during row insertion.
         """
 
         item = ItemAdapter(item).asdict()
-        errors = self.client.insert_rows_json(self.table_ref, [item])
 
-        if errors:
-            raise Exception(f"Encountered errors while inserting rows: {errors}")
+        query = f"SELECT COUNT(*) FROM `{self.dataset}.{self.table}` WHERE article_url = '{item['article_url']}'"
+        result = self.client.query(query).result()
+        count = list(result)[0][0]
+
+        if count == 0:
+            errors = self.client.insert_rows_json(self.table_ref, [item])
+            if errors:
+                raise Exception(f"Encountered errors while inserting rows: {errors}")
         
         return item
