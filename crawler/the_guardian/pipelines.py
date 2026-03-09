@@ -1,6 +1,7 @@
 from itemadapter import ItemAdapter
 from google.cloud import bigquery
 import yaml
+import os
 
 class TheGuardianPipeline:
     """
@@ -16,7 +17,8 @@ class TheGuardianPipeline:
     def open_spider(self):
         """Initializes the BigQuery client and table reference when the spider opens."""
 
-        with open('config/config.yaml', 'r') as file:
+        config_path = os.path.join(os.path.dirname(__file__), '..', '..', 'config', 'config.yaml')
+        with open(config_path, 'r') as file:
             config = yaml.safe_load(file)
 
         self.dataset = config['bigquery']['dataset']
