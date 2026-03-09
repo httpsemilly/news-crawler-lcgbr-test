@@ -40,7 +40,7 @@ class TheGuardianSpider(scrapy.Spider):
 
         articles = response.css("a::attr(href)").getall()
         pattern = r"/\d{4}/[a-z]{3}/\d{2}/"
-        excluded_sections = ['/audio/', '/live/', '/gallery/', '/info/']
+        excluded_sections = ['/audio/', '/live/', '/gallery/', '/info/', '/picture/', '/sign-up']
 
         for url in articles:
             if not any(section in url for section in excluded_sections):
@@ -63,13 +63,28 @@ class TheGuardianSpider(scrapy.Spider):
         item = TheGuardianItem()
         doc = Document(response.text)
 
-        item['headline'] = response.css('h1::text').get()
         item['article_url'] = response.url
-        item['author'] = response.css('address[data-component="meta-byline"] a[rel="author"]::text').getall()
+
+        item['headline'] = response.css('h1::text').get()
+        if item['headline'] is None:
+            item['headline'] = response.css('h1 span::text').get()
+
+        item['author'] = response.css('a[rel="author"]::text').getall()
+        if not item['author']:
+            item['author'] = response.css('address[data-component="meta-byline"] div span::text').getall()
+
         item['article_text'] = BeautifulSoup(doc.summary(), 'lxml').get_text()
+
         item['published_date'] = response.css('details[data-gu-name="dateline"] summary span::text').get()
+
+        if item['published_date'] is None:
+            item['published_date'] = response.css('div[data-gu-name="dateline"]::text').get()
+
+        if item['published_date'] is not None:
+            item['published_date'] = datetime.strptime(item['published_date'], '%a %d %b %Y %H.%M %Z').strftime('%Y-%m-%d %H:%M:%S')
+
         item['category'] = response.url.split('/')[3]
         item['standfirst'] = response.css('div[data-gu-name="standfirst"] div p::text').get()
-        item['scraped_at'] = datetime.now()
+        item['scraped_at'] = datetime.now().replace(microsecond=0).isoformat()
 
         yield item
